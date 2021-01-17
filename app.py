@@ -2,25 +2,46 @@ import dash_bootstrap_components as dbc
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table
+from dash.dependencies import Input, Output
+
+from spice_list import spice_list
+from updated_list import updated_list
+import pickle
+
+if updated_list:
+    the_list = updated_list
+else:
+    the_list = spice_list
 
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 app.layout = html.Div(children=[
-    html.H1(children='Hello Dash'),
-
-    html.Div(children='''
-        Dash: A web application framework for Python.
-    '''),
+    html.H1(children='The Cupboard List'),
     dcc.Dropdown(
-        id='demo-dropdown',
+        id='dropdown',
         options=[
-            {'label': 'New York City', 'value': 'NYC'},
-            {'label': 'Montreal', 'value': 'MTL'},
-            {'label': 'San Francisco', 'value': 'SF'}
+            {'label' : 'Spices', 'value' : 'spices'},
+            {'label' : 'Oils/Vinegars/Syrups/Liq.', 'value' : 'oils_vinegar_syrups_liquids'},
+            {'label' : 'Other', 'value' : 'other'}
         ],
-        value='NYC'
+        value='spices'
     ),
+    dash_table.DataTable(
+        id= 'table',
+        columns=[{'name' : '', 'id' : 'list-name'}],
+        data = [],
+        row_deletable=True
+    )
     ])
+
+@app.callback(
+    Output('table', 'data'),
+    Input('dropdown', 'value')
+)
+def update_table(value):
+    
+    return [{'list-name' : i} for i in spice_list[value]]
 
 
 if __name__=='__main__':
