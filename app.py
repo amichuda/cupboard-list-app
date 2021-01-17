@@ -3,14 +3,15 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 
 from spice_list import spice_list
-from updated_list import updated_list
 import pickle
+import os
 
-if updated_list:
-    the_list = updated_list
+if os.path.exists('the_list.pickle'):
+    with open('this_list.pickle', 'wb') as f:
+        pickle.load(f)
 else:
     the_list = spice_list
 
@@ -18,6 +19,11 @@ app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 app.layout = html.Div(children=[
     html.H1(children='The Cupboard List'),
+    dbc.Alert(id="alert-fade",
+        dismissable=True,
+        is_open=False,
+        duration=4000
+    ),
     dcc.Dropdown(
         id='dropdown',
         options=[
@@ -42,6 +48,26 @@ app.layout = html.Div(children=[
 def update_table(value):
     
     return [{'list-name' : i} for i in spice_list[value]]
+
+
+@app.callback(
+    Output('alert-fade', 'children'),
+    Output('alert-fade', 'is_open'),
+    Input('table', 'data_previous'),
+    State('table', 'data')
+)
+def update_row_delete(previous, current):
+    print("Previous:", previous)
+    print("Current:", current)
+    
+    # Save data to pickle
+    with open('the_list.pickle', 'wb') as f:
+        pickle.dump(current, f)
+    
+    if previous is None:
+        dash.exceptions.PreventUpdate()
+    else:
+        return (', '.join([f'Removed {row["list-name"]}' for row in previous if row not in current]), True)
 
 
 if __name__=='__main__':
