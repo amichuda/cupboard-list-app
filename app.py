@@ -9,12 +9,6 @@ from spice_list import spice_list
 import pickle
 import os
 
-if os.path.exists('the_list.pickle'):
-    with open('this_list.pickle', 'wb') as f:
-        pickle.load(f)
-else:
-    the_list = spice_list
-
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 app.layout = html.Div(children=[
@@ -37,7 +31,8 @@ app.layout = html.Div(children=[
         id= 'table',
         columns=[{'name' : '', 'id' : 'list-name'}],
         data = [],
-        row_deletable=True
+        row_deletable=True,
+        sort_action= 'native'
     )
     ])
 
@@ -47,27 +42,45 @@ app.layout = html.Div(children=[
 )
 def update_table(value):
     
-    return [{'list-name' : i} for i in spice_list[value]]
+    if os.path.exists('the_list.pickle'):
+        with open('the_list.pickle', 'rb') as f:
+            the_list = pickle.load(f)
+    else:
+        the_list = spice_list
+    
+    return the_list[value]
 
 
 @app.callback(
     Output('alert-fade', 'children'),
     Output('alert-fade', 'is_open'),
-    Input('table', 'data_previous'),
-    State('table', 'data')
+    Input('table', 'data'),
+    State('table', 'data_previous'),
+    State('dropdown', 'value')
 )
-def update_row_delete(previous, current):
+def update_row_delete(current, previous, value):
     print("Previous:", previous)
     print("Current:", current)
+    print("Value: ", value)
+    
+    if os.path.exists('the_list.pickle'):
+        with open('the_list.pickle', 'rb') as f:
+            the_list = pickle.load(f)
+    else:
+        the_list = spice_list
     
     # Save data to pickle
+    # First get new list by making new dict
+    previous_in_list = the_list[value]
+    the_list[value] = current
+    
     with open('the_list.pickle', 'wb') as f:
-        pickle.dump(current, f)
+        pickle.dump(the_list, f)
     
     if previous is None:
-        dash.exceptions.PreventUpdate()
+        return '', False
     else:
-        return (', '.join([f'Removed {row["list-name"]}' for row in previous if row not in current]), True)
+        return ', '.join([f'Removed {row["list-name"]}' for row in previous_in_list if row not in current]), True
 
 
 if __name__=='__main__':
